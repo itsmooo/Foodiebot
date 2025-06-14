@@ -1,0 +1,244 @@
+{
+    "restaurant": {
+        "name": "Maqaayada Barwaaqo	",
+        "location": "Mogadishu, Somalia",
+        "contact": "+252 61 1499124"
+    },
+    "menu": {
+        "main_dishes": [
+            {
+                "id": "101",
+                "name": "Bariis Digaag",
+                "description": "Somali rice with spiced chicken",
+                "price": 7.00
+            },
+            {
+                "id": "102",
+                "name": "Bariis Hilib Ari",
+                "description": "Basmati rice with tender goat meat",
+                "price": 8.00
+            },
+            {
+                "id": "103",
+                "name": "Baasto Somali",
+                "description": "Spaghetti with Somali spiced sauce",
+                "price": 6.50
+            },
+            {
+                "id": "104",
+                "name": "Suqaar Digaag",
+                "description": "Chicken cubes sautéed with vegetables",
+                "price": 6.00
+            },
+            {
+                "id": "105",
+                "name": "Suqaar Hilib Ari",
+                "description": "Goat meat suqaar with onions and peppers",
+                "price": 7.50
+            },
+            {
+                "id": "106",
+                "name": "Maraq Digaag",
+                "description": "Somali chicken stew",
+                "price": 6.00
+            },
+            {
+                "id": "107",
+                "name": "Maraq Hilib Lo’aad",
+                "description": "Beef stew with Somali spices",
+                "price": 6.50
+            },
+            {
+                "id": "108",
+                "name": "Canjeero & Subag",
+                "description": "Fermented pancake with ghee",
+                "price": 4.00
+            },
+            {
+                "id": "109",
+                "name": "Muufo & Malawax",
+                "description": "Flatbread with pancake, ghee, and honey",
+                "price": 4.50
+            },
+            {
+                "id": "110",
+                "name": "Kaluun Duban",
+                "description": "Grilled fish with lemon and spices",
+                "price": 8.00
+            },
+            {
+                "id": "111",
+                "name": "Kabab Digaag",
+                "description": "Grilled chicken skewers",
+                "price": 5.00
+            },
+            {
+                "id": "112",
+                "name": "Kabab Hilib",
+                "description": "Grilled lamb or beef skewers",
+                "price": 5.50
+            },
+            {
+                "id": "113",
+                "name": "Kac Kac iyo Maraq",
+                "description": "Fried dough with stew",
+                "price": 4.00
+            },
+            {
+                "id": "114",
+                "name": "Bariis Isku Dhex Karis",
+                "description": "One-pot rice with meat and vegetables",
+                "price": 6.50
+            },
+            {
+                "id": "115",
+                "name": "Bur Macaan",
+                "description": "Sweet fried Somali bread",
+                "price": 3.00
+            },
+            {
+                "id": "116",
+                "name": "Xalwa",
+                "description": "Spiced Somali halwa dessert",
+                "price": 2.50
+            }
+        ],
+        "snacks": [
+            {
+                "id": "201",
+                "name": "Sambuus",
+                "description": "Fried pastry with meat or veggie filling",
+                "price": 0.50
+            },
+            {
+                "id": "202",
+                "name": "Kac Kac",
+                "description": "Crunchy sweet Somali cookies",
+                "price": 1.00
+            },
+            {
+                "id": "203",
+                "name": "Malawax",
+                "description": "Sweet Somali pancake",
+                "price": 1.00
+            },
+            {
+                "id": "204",
+                "name": "Anjero Quraac",
+                "description": "Somali breakfast pancake",
+                "price": 2.00
+            },
+            {
+                "id": "205",
+                "name": "Qosol Qosol",
+                "description": "Biscuit-style Somali sweet",
+                "price": 1.00
+            },
+            {
+                "id": "206",
+                "name": "Bajiye",
+                "description": "Fried veggie fritters",
+                "price": 1.00
+            },
+            {
+                "id": "207",
+                "name": "Buskud Somali",
+                "description": "Somali tea biscuits",
+                "price": 0.75
+            }
+        ],
+        "drinks": [
+            {
+                "id": "301",
+                "name": "Shaah Somali",
+                "description": "Black tea with cardamom and cloves",
+                "price": 0.50
+            },
+            {
+                "id": "302",
+                "name": "Shaah Caano",
+                "description": "Milk tea Somali-style",
+                "price": 0.75
+            },
+            {
+                "id": "303",
+                "name": "Caano Qabow",
+                "description": "Chilled fresh milk",
+                "price": 1.00
+            },
+            {
+                "id": "304",
+                "name": "Caano Geel",
+                "description": "Camel milk (traditional)",
+                "price": 1.50
+            },
+            {
+                "id": "305",
+                "name": "Cabitaan Cambe",
+                "description": "Mango juice",
+                "price": 1.50
+            },
+            {
+                "id": "306",
+                "name": "Cabitaan Tufaax",
+                "description": "Apple juice",
+                "price": 1.50
+            },
+            {
+                "id": "307",
+                "name": "Cabitaan Moos",
+                "description": "Banana smoothie",
+                "price": 2.00
+            },
+            {
+                "id": "308",
+                "name": "Cabitaan Liin",
+                "description": "Fresh lemonade",
+                "price": 1.50
+            },
+            {
+                "id": "309",
+                "name": "Biyo",
+                "description": "Bottled water",
+                "price": 0.50
+            },
+            {
+                "id": "310",
+                "name": "Fanta",
+                "description": "Fizzy fruit soda",
+                "price": 1.00
+            },
+            {
+                "id": "311",
+                "name": "Coca-Cola",
+                "description": "Classic soda drink",
+                "price": 1.00
+            },
+            {
+                "id": "312",
+                "name": "Sprite",
+                "description": "Lemon-lime soda",
+                "price": 1.00
+            },
+            {
+                "id": "313",
+                "name": "Cabitaan Cocktail",
+                "description": "Mixed fruit juice",
+                "price": 2.00
+            },
+            {
+                "id": "314",
+                "name": "Tamam",
+                "description": "Tamarind juice",
+                "price": 1.50
+            }
+        ]
+    },
+    "payment_methods": {
+        "mobile_money": {
+            "provider": "Hormuud",
+            "number": "+252 61 1499124",
+            "name": "Maqaayada Barwaaqo	"
+        }
+    }
+}

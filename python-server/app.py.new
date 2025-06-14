@@ -1,0 +1,444 @@
+from flask import Flask, request, jsonify, make_response
+from flask_cors import CORS
+import os
+import json
+import random
+from datetime import datetime, timedelta
+import logging
+import jwt
+from functools import wraps
+
+# Configure logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
+
+# Initialize Flask app
+app = Flask(__name__)
+CORS(app)
+
+# JWT Configuration
+JWT_SECRET = os.environ.get('JWT_SECRET', 'your_jwt_secret_key_here')
+JWT_ALGORITHM = 'HS256'
+JWT_EXPIRATION_DELTA = 24  # hours
+
+# User data (would use a database in production)
+users = [
+    {
+        "_id": "user_1",
+        "name": "Admin User",
+        "email": "admin@example.com",
+        "password": "admin123",  # In production, this would be hashed
+        "phone": "123456789",
+        "role": "admin"
+    },
+    {
+        "_id": "user_2",
+        "name": "Regular User",
+        "email": "user@example.com",
+        "password": "user123",  # In production, this would be hashed
+        "phone": "987654321",
+        "role": "user"
+    }
+]
+
+# Load menu data
+def load_menu():
+    try:
+        menu_path = os.path.join(os.path.dirname(__file__), 'data', 'menu.json')
+        if os.path.exists(menu_path):
+            with open(menu_path, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        else:
+            # Default menu if file doesn't exist
+            return {
+                "categories": [
+                    {
+                        "name": "Main Dishes",
+                        "items": [
+                            {"name": "Bariis iyo Hilib", "price": 8.99, "description": "Rice with meat"},
+                            {"name": "Baasto", "price": 7.99, "description": "Pasta with sauce"},
+                            {"name": "Chicken Suqaar", "price": 9.99, "description": "Somali style chicken"}
+                        ]
+                    },
+                    {
+                        "name": "Drinks",
+                        "items": [
+                            {"name": "Shaah", "price": 1.99, "description": "Somali tea"},
+                            {"name": "Caano", "price": 2.49, "description": "Milk"},
+                            {"name": "Qasaar", "price": 2.99, "description": "Fresh juice"}
+                        ]
+                    }
+                ]
+            }
+    except Exception as e:
+        logger.error(f"Error loading menu: {e}")
+        return {"categories": []}
+
+# Store orders in memory (would use a database in production)
+orders = []
+
+# Authentication decorator
+def token_required(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        token = None
+        auth_header = request.headers.get('Authorization')
+        
+        if auth_header and auth_header.startswith('Bearer '):
+            token = auth_header.split(' ')[1]
+        
+        if not token:
+            return jsonify({'error': 'Token is missing'}), 401
+        
+        try:
+            data = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+            current_user = next((user for user in users if user['_id'] == data['user_id']), None)
+            
+            if not current_user:
+                return jsonify({'error': 'Invalid token'}), 401
+                
+        except jwt.ExpiredSignatureError:
+            return jsonify({'error': 'Token has expired'}), 401
+        except jwt.InvalidTokenError:
+            return jsonify({'error': 'Invalid token'}), 401
+            
+        return f(current_user, *args, **kwargs)
+    
+    return decorated
+
+# Admin role check decorator
+def admin_required(f):
+    @wraps(f)
+    def decorated(current_user, *args, **kwargs):
+        if current_user['role'] != 'admin':
+            return jsonify({'error': 'Admin privileges required'}), 403
+        return f(current_user, *args, **kwargs)
+    
+    return decorated
+
+# Generate responses based on user input
+def generate_bot_response(message):
+    message = message.lower()
+    
+    # Check for greetings
+    if any(greeting in message for greeting in ["hello", "hi", "salaam", "assalamu", "hey"]):
+        return "Salaam! Ku soo dhawoow Geediga Dahabka Restaurant! Maxaad dalbanaysaa maanta?"
+    
+    # Check for menu request
+    if any(word in message for word in ["menu", "cunto", "food", "cunno", "options", "available"]):
+        menu = load_menu()
+        response = "**MENU**\n\n"
+        
+        for category in menu["categories"]:
+            response += f"**{category['name']}**\n"
+            for item in category["items"]:
+                response += f"**{item['name']}** - ${item['price']:.2f} _{item['description']}_\n"
+            response += "\n"
+        
+        return response
+    
+    # Check for order intent
+    if any(word in message for word in ["order", "want", "like", "get", "have", "dalbo", "dalbashada"]):
+        return "Waad ku mahadsantahay dalabkaaga! Fadlan xaqiiji inaad rabto in aad dalbato: [Order details]. Wadarta lacagta: $XX.XX"
+    
+    # Check for payment intent
+    if any(word in message for word in ["pay", "payment", "money", "cash", "card", "lacag", "bixi"]):
+        return "Waxaad lacagta ku bixin kartaa Hormuud. Fadlan gali lambarka telefoonkaaga si aad u hesho codsiga lacag bixinta."
+    
+    # Default response
+    return "Waan ka xumahay, ma fahmin codsigaaga. Ma waxaad rabta inaad aragto menu-ga ama inaad wax dalbato?"
+
+# Routes
+@app.route('/api/chat', methods=['POST'])
+def chat():
+    try:
+        data = request.json
+        user_message = data.get('message', '')
+        
+        if not user_message:
+            return jsonify({"error": "No message provided"}), 400
+        
+        logger.info(f"Received message: {user_message}")
+        
+        # Generate response
+        response = generate_bot_response(user_message)
+        
+        return jsonify({
+            "response": response,
+            "timestamp": datetime.now().isoformat()
+        })
+    
+    except Exception as e:
+        logger.error(f"Error in chat endpoint: {e}")
+        return jsonify({"error": "Internal server error"}), 500
+
+@app.route('/api/menu', methods=['GET'])
+def get_menu():
+    try:
+        menu = load_menu()
+        return jsonify(menu)
+    except Exception as e:
+        logger.error(f"Error in menu endpoint: {e}")
+        return jsonify({"error": "Failed to load menu"}), 500
+
+@app.route('/api/orders', methods=['POST'])
+def create_order():
+    try:
+        data = request.json
+        
+        # Validate order data
+        if not data or 'items' not in data or not data['items']:
+            return jsonify({"error": "Invalid order data"}), 400
+        
+        # Create new order
+        order_id = f"order_{len(orders) + 1}_{int(datetime.now().timestamp())}"
+        new_order = {
+            "_id": order_id,
+            "items": data['items'],
+            "totalAmount": data.get('totalAmount', 0),
+            "status": "pending",
+            "paymentStatus": "pending",
+            "createdAt": datetime.now().isoformat(),
+            "message": data.get('message', ''),
+            "response": data.get('response', ''),
+            "timestamp": datetime.now().isoformat()
+        }
+        
+        orders.append(new_order)
+        logger.info(f"Created new order: {order_id}")
+        
+        return jsonify(new_order), 201
+    
+    except Exception as e:
+        logger.error(f"Error creating order: {e}")
+        return jsonify({"error": "Failed to create order"}), 500
+
+@app.route('/api/orders', methods=['GET'])
+@token_required
+def get_orders(current_user):
+    try:
+        # If admin, return all orders; otherwise, return only user's orders
+        if current_user['role'] == 'admin':
+            result = orders
+        else:
+            # In a real app, you'd filter by user_id
+            result = [order for order in orders if order.get('user_id') == current_user['_id']]
+            
+        return jsonify(result)
+    except Exception as e:
+        logger.error(f"Error fetching orders: {e}")
+        return jsonify({"error": "Failed to fetch orders"}), 500
+        
+@app.route('/order', methods=['GET'])
+@token_required
+@admin_required
+def get_all_orders(current_user):
+    """Admin route to get all orders"""
+    try:
+        logger.info(f"Admin {current_user['name']} fetching all orders")
+        return jsonify(orders)
+    except Exception as e:
+        logger.error(f"Error fetching all orders: {e}")
+        return jsonify({"error": "Failed to fetch orders"}), 500
+        
+@app.route('/order/<order_id>', methods=['PUT'])
+@token_required
+@admin_required
+def update_order_status(current_user, order_id):
+    """Admin route to update order status"""
+    try:
+        data = request.json
+        status = data.get('status')
+        
+        if not status:
+            return jsonify({"error": "Status is required"}), 400
+            
+        # Find order by ID
+        order_index = next((i for i, order in enumerate(orders) if order.get('_id') == order_id), None)
+        
+        if order_index is None:
+            return jsonify({"error": "Order not found"}), 404
+            
+        # Update order status
+        orders[order_index]['status'] = status
+        orders[order_index]['updatedAt'] = datetime.now().isoformat()
+        orders[order_index]['updatedBy'] = current_user['_id']
+        
+        logger.info(f"Admin {current_user['name']} updated order {order_id} status to {status}")
+        
+        return jsonify(orders[order_index])
+        
+    except Exception as e:
+        logger.error(f"Error updating order status: {e}")
+        return jsonify({"error": "Failed to update order status"}), 500
+        
+@app.route('/order/<order_id>/payment', methods=['PUT'])
+@token_required
+@admin_required
+def update_payment_status(current_user, order_id):
+    """Admin route to update payment status"""
+    try:
+        data = request.json
+        payment_status = data.get('paymentStatus')
+        
+        if not payment_status:
+            return jsonify({"error": "Payment status is required"}), 400
+            
+        # Find order by ID
+        order_index = next((i for i, order in enumerate(orders) if order.get('_id') == order_id), None)
+        
+        if order_index is None:
+            return jsonify({"error": "Order not found"}), 404
+            
+        # Update payment status
+        orders[order_index]['paymentStatus'] = payment_status
+        orders[order_index]['paymentUpdatedAt'] = datetime.now().isoformat()
+        orders[order_index]['paymentUpdatedBy'] = current_user['_id']
+        
+        logger.info(f"Admin {current_user['name']} updated order {order_id} payment status to {payment_status}")
+        
+        return jsonify(orders[order_index])
+        
+    except Exception as e:
+        logger.error(f"Error updating payment status: {e}")
+        return jsonify({"error": "Failed to update payment status"}), 500
+
+@app.route('/api/payment/hormuud', methods=['POST'])
+def process_payment():
+    try:
+        data = request.json
+        phone = data.get('phone')
+        amount = data.get('amount')
+        
+        if not phone or not amount:
+            return jsonify({"error": "Phone and amount are required"}), 400
+        
+        # Simulate payment processing
+        transaction_id = f"TX{random.randint(100000, 999999)}"
+        
+        return jsonify({
+            "success": True,
+            "message": "Payment request sent successfully",
+            "transactionId": transaction_id
+        })
+    
+    except Exception as e:
+        logger.error(f"Error processing payment: {e}")
+        return jsonify({"error": "Payment processing failed"}), 500
+
+# Authentication routes
+@app.route('/api/auth/login', methods=['POST'])
+def login():
+    try:
+        data = request.json
+        email = data.get('email')
+        password = data.get('password')
+        
+        if not email or not password:
+            return jsonify({"error": "Email and password are required"}), 400
+        
+        # Find user by email
+        user = next((user for user in users if user['email'] == email), None)
+        
+        if not user or user['password'] != password:  # In production, use proper password hashing
+            return jsonify({"error": "Invalid email or password"}), 401
+        
+        # Generate JWT token
+        token_expiry = datetime.now() + timedelta(hours=JWT_EXPIRATION_DELTA)
+        token_payload = {
+            'user_id': user['_id'],
+            'exp': token_expiry
+        }
+        
+        token = jwt.encode(token_payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
+        
+        return jsonify({
+            'token': token,
+            'user': {
+                'id': user['_id'],
+                'name': user['name'],
+                'email': user['email'],
+                'role': user['role']
+            }
+        })
+    
+    except Exception as e:
+        logger.error(f"Error in login: {e}")
+        return jsonify({"error": "Login failed"}), 500
+
+@app.route('/api/auth/me', methods=['GET'])
+@token_required
+def get_user_profile(current_user):
+    try:
+        # Return user data without sensitive information
+        return jsonify({
+            'id': current_user['_id'],
+            'name': current_user['name'],
+            'email': current_user['email'],
+            'phone': current_user['phone'],
+            'role': current_user['role']
+        })
+    
+    except Exception as e:
+        logger.error(f"Error getting user profile: {e}")
+        return jsonify({"error": "Failed to get user profile"}), 500
+
+@app.route('/api/auth/register', methods=['POST'])
+def register():
+    try:
+        data = request.json
+        
+        # Validate required fields
+        required_fields = ['name', 'email', 'password', 'phone']
+        for field in required_fields:
+            if field not in data or not data[field]:
+                return jsonify({"error": f"{field} is required"}), 400
+        
+        # Check if email already exists
+        if any(user['email'] == data['email'] for user in users):
+            return jsonify({"error": "Email already registered"}), 400
+        
+        # Create new user
+        new_user = {
+            "_id": f"user_{len(users) + 1}",
+            "name": data['name'],
+            "email": data['email'],
+            "password": data['password'],  # In production, hash the password
+            "phone": data['phone'],
+            "role": "user"  # Default role is user
+        }
+        
+        users.append(new_user)
+        
+        # Generate JWT token
+        token_expiry = datetime.now() + timedelta(hours=JWT_EXPIRATION_DELTA)
+        token_payload = {
+            'user_id': new_user['_id'],
+            'exp': token_expiry
+        }
+        
+        token = jwt.encode(token_payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
+        
+        return jsonify({
+            'token': token,
+            'user': {
+                'id': new_user['_id'],
+                'name': new_user['name'],
+                'email': new_user['email'],
+                'role': new_user['role']
+            }
+        }), 201
+    
+    except Exception as e:
+        logger.error(f"Error in registration: {e}")
+        return jsonify({"error": "Registration failed"}), 500
+
+# Health check endpoint
+@app.route('/health', methods=['GET'])
+def health_check():
+    return jsonify({"status": "healthy", "timestamp": datetime.now().isoformat()})
+
+# Main entry point
+if __name__ == '__main__':
+    port = int(os.environ.get("PORT", 5001))
+    app.run(host='0.0.0.0', port=port, debug=True)
